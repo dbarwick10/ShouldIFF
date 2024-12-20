@@ -11,8 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Loading state messages
     const loadingStates = [
         'Fetching player information...',
-        'Gathering match statistics...',
-        'Collecting match event data...',
+        'Gathering match event data...',
+        'Collecting match timeline...',
         'Analyzing player performance...',
         'Calculating event timings...',
         'Checking live game data...',
