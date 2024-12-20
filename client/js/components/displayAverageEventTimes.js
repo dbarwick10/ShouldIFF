@@ -570,8 +570,8 @@ async function startLiveDataRefresh() {
 
     async function updateLiveData() {
         try {
-            const response = 'http://127.0.0.1:3000/api/live-stats' 
-            
+            const response = await fetch('http://127.0.0.1:3000/api/live-stats')
+                        
             if (!response.ok) {
                 if (response.status === 404) {
                     console.log('No active game found - preserving last game data');
