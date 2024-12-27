@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League of Legends Stats</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JVVLV3M1D6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-JVVLV3M1D6');
+    </script>
+    <link rel="stylesheet" href="./client/css/statStyle.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+        <h1>Should I FF?</h1>
+        <p>League of Legends Live Stats Comparison Tool</p>
+        </div>
+        <div class="how-to-use-this">
+            <h3>How to use this?</h3>
+            <p>
+            Enter your summoner name, tagline, region, and game mode. Click on the "Fetch Stats" button.
+            </p>
+            <img src="" alt="">
+        </div>
+        <div class="input-section">
+            <input type="text" id="summonerName" placeholder="Enter Summoner Name">
+            <input type="text" id="tagLine" placeholder="Enter Tagline">
+            <select id="region">
+                <option value="americas" selected>Americas</option>
+                <option value="asia">Asia</option>
+                <option value="europe">Europe</option>
+                <option value="sea">SEA</option>
+            </select>
+            <select id="gameMode">
+                <option value="ranked">Ranked</option>
+                <option value="normal">Normal</option>
+                <option value="aram" selected>ARAM</option>
+                <option value="ultbook">ULTBOOK</option>
+                <option value="all" >All selected</option>
+            </select>
+            <button id="fetchStatsButton">Fetch Stats</button>
+        </div>
+        <div id="player-summary"> 
+            <!-- displaying none currently change to flex in css -->
+        </div>
+        <div id="loading">
+        </div>
+        <div id="output-container"> 
+            <!-- displaying none currently change to flex in css-->
+            <table id="output">
+                <thead>
+                    <tr>
+                        <th>Stats</th>
+                        <th>Games</th>
+                        <th>KDA</th>
+                        <th>Level</th>
+                        <th>Item Gold</th>
+                        <th>Time Spent Dead</th>
+                        <th>Turrets Killed</th>
+                        <th>Inhibitors Killed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        <div id="chartLegend" class="chart-legend">
+            <div class="legend-section">
+                <div class="legend-item wins">
+                    <div class="legend-item-color wins-color"></div>
+                    <span>Wins</span>
+                </div>
+                <div class="legend-item losses">
+                    <div class="legend-item-color losses-color"></div>
+                    <span>Losses</span>
+                </div>
+                <div class="legend-item surrender-wins">
+                    <div class="legend-item-color surrender-wins-color"></div>
+                    <span>Surrender Wins</span>
+                </div>
+                <div class="legend-item surrender-losses">
+                    <div class="legend-item-color surrender-losses-color"></div>
+                    <span>Surrender Losses</span>
+                </div>
+                <div class="legend-item previous-game">
+                    <div class="legend-item-color previous-game-color"></div>
+                    <span>Previous Game</span>
+                </div>
+                <div class="legend-item current-game">
+                    <div class="legend-item-color current-game-color"></div>
+                    <span>Current Game</span>
+                </div>
+            </div>
+            <div class="toggle-container">
+                <button id="playerStatsBtn" class="toggle-btn active">Player Stats</button>
+                <button id="teamStatsBtn" class="toggle-btn">Team Stats</button>
+                <button id="enemyStatsBtn" class="toggle-btn">Enemy Stats</button>
+            </div>
+        </div>
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <canvas id="killsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="deathsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="assistsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="kdaChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="deathTimersChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="turretsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="inhibitorsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="dragonsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="baronsChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="eldersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p><small>
+            Shouldiff isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+        </small></p>
+    </footer>
+    <script type="module" src="./client/js/index.js"></script>
+</body>
+</html>
