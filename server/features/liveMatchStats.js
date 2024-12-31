@@ -66,11 +66,21 @@ export async function calculateLiveStats() {
                     // Kills
                     if (KillerName === activePlayerName) {
                         teamStats.playerStats.kills.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.kills,
+                            teamStats.playerStats.killsCumulative,
+                            EventTime
+                        );
                     }
                     
                     // Deaths
                     if (VictimName === activePlayerName) {
                         teamStats.playerStats.deaths.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.deaths,
+                            teamStats.playerStats.deathsCumulative,
+                            EventTime
+                        );
                         
                         const currentMinutes = Math.floor(EventTime / 60);
                         const deathTimer = calculateDeathTimer(currentMinutes, victimPlayer?.level);
@@ -86,6 +96,11 @@ export async function calculateLiveStats() {
                     // Assists
                     if (Assisters.includes(activePlayerName)) {
                         teamStats.playerStats.assists.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.assists,
+                            teamStats.playerStats.assistsCumulative,
+                            EventTime
+                        );
                     }
         
                     // Update KDA
@@ -99,6 +114,14 @@ export async function calculateLiveStats() {
                             timestamp: EventTime,
                             kdaValue: parseFloat(kdaValue.toFixed(2))
                         });
+
+                        const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
+                        const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
+                        
+                        teamStats.playerStats.kdaCumulative.push({
+                            timestamp: EventTime,
+                            kdaValue: parseFloat(cumulativeKda.toFixed(2))
+                        });
                     }
                 }
         
@@ -110,14 +133,29 @@ export async function calculateLiveStats() {
                 if (playerTeamMembers.includes(KillerName) || 
                     (isTurretKill && teamAssists.length > 0)) {
                     teamStats.teamStats.kills.push(EventTime);
+                    updateCumulativeArray(
+                        teamStats.teamStats.kills,
+                        teamStats.teamStats.killsCumulative,
+                        EventTime
+                    );
                     
                     if (teamAssists.length > 0) {
                         teamStats.teamStats.assists.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.assists,
+                            teamStats.playerStats.assistsCumulative,
+                            EventTime
+                        );
                     }
                 }
                 
                 if (playerTeamMembers.includes(VictimName)) {
                     teamStats.teamStats.deaths.push(EventTime);
+                    updateCumulativeArray(
+                        teamStats.teamStats.deaths,
+                        teamStats.teamStats.deathsCumulative,
+                        EventTime
+                    );
                     
                     const currentMinutes = Math.floor(EventTime / 60);
                     const deathTimer = calculateDeathTimer(currentMinutes, victimPlayer?.level);
@@ -134,14 +172,29 @@ export async function calculateLiveStats() {
                 if (!playerTeamMembers.includes(KillerName) || 
                     (isTurretKill && enemyAssists.length > 0)) {
                     teamStats.enemyStats.kills.push(EventTime);
+                    updateCumulativeArray(
+                        teamStats.enemyStats.kills,
+                        teamStats.enemyStats.killsCumulative,
+                        EventTime
+                    );
                     
                     if (enemyAssists.length > 0) {
                         teamStats.enemyStats.assists.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.assists,
+                            teamStats.enemyStats.assistsCumulative,
+                            EventTime
+                        );
                     }
                 }
                 
                 if (!playerTeamMembers.includes(VictimName)) {
                     teamStats.enemyStats.deaths.push(EventTime);
+                    updateCumulativeArray(
+                        teamStats.enemyStats.deaths,
+                        teamStats.enemyStats.deathsCumulative,
+                        EventTime
+                    );
                     
                     const currentMinutes = Math.floor(EventTime / 60);
                     const deathTimer = calculateDeathTimer(currentMinutes, victimPlayer?.level);
@@ -171,6 +224,14 @@ export async function calculateLiveStats() {
                         timestamp: EventTime,
                         kdaValue: parseFloat(kdaValue.toFixed(2))
                     });
+
+                    const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
+                    const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
+                    
+                    teamStats.teamStats.kdaCumulative.push({
+                        timestamp: EventTime,
+                        kdaValue: parseFloat(cumulativeKda.toFixed(2))
+                    });
                 }
         
                 // Enemy KDA
@@ -189,6 +250,14 @@ export async function calculateLiveStats() {
                         timestamp: EventTime,
                         kdaValue: parseFloat(kdaValue.toFixed(2))
                     });
+
+                    const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
+                    const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
+                    
+                    teamStats.enemyStats.kdaCumulative.push({
+                        timestamp: EventTime,
+                        kdaValue: parseFloat(cumulativeKda.toFixed(2))
+            });
                 }
 
                 } else if (event.EventName === "TurretKilled") {
@@ -200,15 +269,30 @@ export async function calculateLiveStats() {
                     // Active Player stats
                     if (activePlayerName && KillerName === activePlayerName) {
                         teamStats.playerStats.turrets.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.turrets,
+                            teamStats.playerStats.turretsCumulative,
+                            EventTime
+                        );
                     }
 
                     if ((killerPlayer?.team === activePlayerTeam) || KillerName.includes(minionPlayerTeam)) {
                         teamStats.teamStats.turrets.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.teamStats.turrets,
+                            teamStats.teamStats.turretsCumulative,
+                            EventTime
+                        );
                     }
 
                     // Enemy Team stats tracking
                     if ((killerPlayer?.team !== activePlayerTeam) || KillerName.includes(minionEnemyTeam)) {
                         teamStats.enemyStats.turrets.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.turrets,
+                            teamStats.enemyStats.turretsCumulative,
+                            EventTime
+                        );
                     }
 
                 } else if (event.EventName === "InhibKilled") {
@@ -219,15 +303,30 @@ export async function calculateLiveStats() {
 
                     if (activePlayerName && KillerName === activePlayerName) {
                         teamStats.playerStats.inhibitors.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.inhibitors,
+                            teamStats.playerStats.inhibitorsCumulative,
+                            EventTime
+                        );
                     }
                 
                     if ((killerPlayer?.team === activePlayerTeam) || KillerName.includes(minionPlayerTeam)) {
                         teamStats.teamStats.inhibitors.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.teamStats.inhibitors,
+                            teamStats.teamStats.inhibitorsCumulative,
+                            EventTime
+                        );
                     }
                 
                     // Enemy Team stats tracking
                     if ((killerPlayer?.team !== activePlayerTeam) || KillerName.includes(minionEnemyTeam)) {
                         teamStats.enemyStats.inhibitors.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.inhibitors,
+                            teamStats.enemyStats.inhibitorsCumulative,
+                            EventTime
+                        );
                     }
 
                 } else if (event.EventName === "DragonKill") {
@@ -237,15 +336,30 @@ export async function calculateLiveStats() {
                     // Active Player stats
                     if (activePlayerName && KillerName === activePlayerName) {
                         teamStats.playerStats.dragons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.dragons,
+                            teamStats.playerStats.dragonsCumulative,
+                            EventTime
+                        );
                     }
 
                     if (killerPlayer?.team === activePlayerTeam) {
                         teamStats.teamStats.dragons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.teamStats.dragons,
+                            teamStats.teamStats.dragonsCumulative,
+                            EventTime
+                        );
                     }
 
                     // Enemy Team stats tracking
                     if (killerPlayer?.team !== activePlayerTeam) {
                         teamStats.enemyStats.dragons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.dragons,
+                            teamStats.enemyStats.dragonsCumulative,
+                            EventTime
+                        );
                     }
                 } else if (event.EventName === "BaronKill") {
                     const { KillerName, EventTime } = event;
@@ -254,15 +368,30 @@ export async function calculateLiveStats() {
                     // Active Player stats
                     if (activePlayerName && KillerName === activePlayerName) {
                         teamStats.playerStats.barons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.barons,
+                            teamStats.playerStats.baronsCumulative,
+                            EventTime
+                        );
                     }
 
                     if (killerPlayer?.team === activePlayerTeam) {
                         teamStats.teamStats.barons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.teamStats.barons,
+                            teamStats.teamStats.baronsCumulative,
+                            EventTime
+                        );
                     }
 
                     // Enemy Team stats tracking
                     if (killerPlayer?.team !== activePlayerTeam) {
                         teamStats.enemyStats.barons.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.barons,
+                            teamStats.enemyStats.baronsCumulative,
+                            EventTime
+                        );
                     }
                 } else if (event.DragonType === "Elder") {
                     const { KillerName, EventTime } = event;
@@ -271,15 +400,30 @@ export async function calculateLiveStats() {
                     // Active Player stats
                     if (activePlayerName && KillerName === activePlayerName) {
                         teamStats.playerStats.elders.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.playerStats.elders,
+                            teamStats.playerStats.eldersCumulative,
+                            EventTime
+                        );
                     }
 
                     if (killerPlayer?.team === activePlayerTeam) {
                         teamStats.teamStats.elders.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.teamStats.elders,
+                            teamStats.teamStats.eldersCumulative,
+                            EventTime
+                        );
                     }
 
                     // Enemy Team stats tracking
                     if (killerPlayer?.team !== activePlayerTeam) {
                         teamStats.enemyStats.elders.push(EventTime);
+                        updateCumulativeArray(
+                            teamStats.enemyStats.elders,
+                            teamStats.enemyStats.eldersCumulative,
+                            EventTime
+                        );
                     }
                 }     
         });
@@ -303,18 +447,34 @@ export async function calculateLiveStats() {
 function createEmptyTeamStats() {
     return { 
         kills: [], 
+        killsCumulative: [],
         deaths: [],
+        deathsCumulative: [],
         timeSpentDead: [],
+        timeSpentDeadCumulative: [],
         totalTimeSpentDead: [],
         assists: [],
+        assistsCumulative: [],
         kda: [],
+        kdaCumulative: [],
         turrets: [],      
+        turretsCumulative: [],
         inhibitors: [],   
+        inhibitorsCumulative: [],
         dragons: [],      
+        dragonsCumulative: [],
         barons: [],       
+        baronsCumulative: [],
         elders: [],       
+        eldersCumulative: [],
         items: []
     };
+}
+
+function updateCumulativeArray(regularArray, cumulativeArray, newValue) {
+    const allValues = [...regularArray];
+    const cumulativeAvg = allValues.reduce((sum, val) => sum + val, 0) / allValues.length;
+    cumulativeArray.push(cumulativeAvg);
 }
 
 // Find the team of a player

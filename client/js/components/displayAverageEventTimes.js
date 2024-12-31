@@ -412,7 +412,7 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                 plugins: {
                     title: { 
                         display: true, 
-                        text: stat === 'deathTimers' ? 'Time Spent Dead vs Time of Death' : 
+                        text: stat === 'deathTimers' ? 'Time Spent Dead' : 
                               (stat === 'kda' ? 'KDA' : capitalizeFirstLetter(stat)) + ' Over Time',
                         font: {
                             size: 16,
@@ -427,13 +427,18 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                             label: function(context) {
                                 const label = context.dataset.label || '';
                                 const value = context.parsed.y;
-                                const time = context.parsed.x.toFixed(1);
+                                const totalMinutes = context.parsed.x;
+                                const minutes = Math.floor(totalMinutes);
+                                const seconds = Math.floor((totalMinutes - minutes) * 60);
+
+                                const timeFormatted = `${minutes}m ${seconds}s`;
+
                                 if (stat === 'deathTimers') {
-                                    return `${label}: ${value.toFixed(1)}s at ${time} min`;
+                                    return `${label}: ${value.toFixed(1)}s at ${timeFormatted}`;
                                 } else if (stat === 'kda') {
-                                    return `${label}: ${value.toFixed(2)} at ${time} min`;
+                                    return `${label}: ${value.toFixed(2)} at ${timeFormatted}`;
                                 } else {
-                                    return `${label}: ${value} at ${time} min`;
+                                    return `${label}: ${value} at ${timeFormatted}`;
                                 }
                             }
                         }
