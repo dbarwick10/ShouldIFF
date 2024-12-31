@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 23000);
 
                 // Make API request
-                const localURL = 'http://127.0.0.1:3000/api/stats';
+                const localURL = 'https://shouldiff.ddns.net/api/stats';
                 const prodURL = 'https://shouldiffserver-new.onrender.com/api/stats';
                 
                 const response = await fetch(LOCAL_TESTING ? localURL : prodURL, {
