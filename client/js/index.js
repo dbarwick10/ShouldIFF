@@ -142,16 +142,22 @@ document.addEventListener('DOMContentLoaded', function() {
             updateUrl(formData);
 
             // Make API request
-            const localURL = 'https://static.developer.riotgames.com/docs/lol/liveclientdata_sample.json';
+            const localURL = 'https://shouldiff.ddns.net/';
             const prodURL = 'http://127.0.0.1:3000/api/stats';
             
-            const response = LOCAL_TESTING ? await fetch(prodURL, {
+            const response = LOCAL_TESTING ? await fetch(localURL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(formData)
-            }) : await fetch(localURL);
+            }) : await fetch(prodURL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
 
             let data;
             try {
