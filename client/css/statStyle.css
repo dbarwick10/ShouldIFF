@@ -330,6 +330,25 @@ button:hover {
     white-space: nowrap;
 }
 
+.display-mode-toggle {
+    margin-left: auto;
+    padding: 0 10px;
+}
+
+.display-mode-toggle .toggle-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    background-color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.display-mode-toggle .toggle-btn:hover {
+    background-color: #3498db;
+    color: white;
+}
+
 /* Toggle Container Styling */
 .toggle-container {
     display: flex;

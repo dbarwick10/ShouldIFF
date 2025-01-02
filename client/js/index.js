@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateUrl(formData);
 
             // Make API request
-            const prodURL = 'https://shouldiff.ddns.net/api/stats';
+            const prodURL = 'http://shouldiff.ddns.net:3000/api/stats';
             const localURL = 'http://127.0.0.1:3000/api/stats';
             
             const response = LOCAL_TESTING ? await fetch(localURL, {

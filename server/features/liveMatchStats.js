@@ -109,19 +109,12 @@ export async function calculateLiveStats() {
                         const currentAssists = teamStats.playerStats.assists.length;
                         const currentDeaths = Math.max(1, teamStats.playerStats.deaths.length);
                         
-                        const kdaValue = (currentKills + currentAssists) / currentDeaths;
-                        teamStats.playerStats.kda.push({
+                        const kdaValue = {
                             timestamp: EventTime,
-                            kdaValue: parseFloat(kdaValue.toFixed(2))
-                        });
-
-                        const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
-                        const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
-                        
-                        teamStats.playerStats.kdaCumulative.push({
-                            timestamp: EventTime,
-                            kdaValue: parseFloat(cumulativeKda.toFixed(2))
-                        });
+                            kdaValue: parseFloat(((currentKills + currentAssists) / currentDeaths).toFixed(2))
+                        };
+                        teamStats.playerStats.kda.push(kdaValue);
+                        updateKDACumulative(teamStats.playerStats.kda, teamStats.playerStats.kdaCumulative, kdaValue);
                     }
                 }
         
@@ -215,24 +208,17 @@ export async function calculateLiveStats() {
                                            teamAssists.length > 0;
         
                 if (shouldUpdateTeamKDA) {
-                    const currentKills = teamStats.teamStats.kills.length;
-                    const currentAssists = teamStats.teamStats.assists.length;
-                    const currentDeaths = Math.max(1, teamStats.teamStats.deaths.length);
-                    
-                    const kdaValue = (currentKills + currentAssists) / currentDeaths;
-                    teamStats.teamStats.kda.push({
-                        timestamp: EventTime,
-                        kdaValue: parseFloat(kdaValue.toFixed(2))
-                    });
-
-                    const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
-                    const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
-                    
-                    teamStats.teamStats.kdaCumulative.push({
-                        timestamp: EventTime,
-                        kdaValue: parseFloat(cumulativeKda.toFixed(2))
-                    });
-                }
+                const currentKills = teamStats.teamStats.kills.length;
+                const currentAssists = teamStats.teamStats.assists.length;
+                const currentDeaths = Math.max(1, teamStats.teamStats.deaths.length);
+                
+                const kdaValue = {
+                    timestamp: EventTime,
+                    kdaValue: parseFloat(((currentKills + currentAssists) / currentDeaths).toFixed(2))
+                };
+                teamStats.teamStats.kda.push(kdaValue);
+                updateKDACumulative(teamStats.teamStats.kda, teamStats.teamStats.kdaCumulative, kdaValue);
+            }
         
                 // Enemy KDA
                 const shouldUpdateEnemyKDA = !playerTeamMembers.includes(KillerName) || 
@@ -245,19 +231,12 @@ export async function calculateLiveStats() {
                     const currentAssists = teamStats.enemyStats.assists.length;
                     const currentDeaths = Math.max(1, teamStats.enemyStats.deaths.length);
                     
-                    const kdaValue = (currentKills + currentAssists) / currentDeaths;
-                    teamStats.enemyStats.kda.push({
+                    const kdaValue = {
                         timestamp: EventTime,
-                        kdaValue: parseFloat(kdaValue.toFixed(2))
-                    });
-
-                    const allKdaValues = teamStats.playerStats.kda.map(k => k.kdaValue);
-                    const cumulativeKda = allKdaValues.reduce((sum, val) => sum + val, 0) / allKdaValues.length;
-                    
-                    teamStats.enemyStats.kdaCumulative.push({
-                        timestamp: EventTime,
-                        kdaValue: parseFloat(cumulativeKda.toFixed(2))
-            });
+                        kdaValue: parseFloat(((currentKills + currentAssists) / currentDeaths).toFixed(2))
+                    };
+                    teamStats.enemyStats.kda.push(kdaValue);
+                    updateKDACumulative(teamStats.enemyStats.kda, teamStats.enemyStats.kdaCumulative, kdaValue);
                 }
 
                 } else if (event.EventName === "TurretKilled") {
@@ -472,9 +451,33 @@ function createEmptyTeamStats() {
 }
 
 function updateCumulativeArray(regularArray, cumulativeArray, newValue) {
-    const allValues = [...regularArray];
-    const cumulativeAvg = allValues.reduce((sum, val) => sum + val, 0) / allValues.length;
-    cumulativeArray.push(cumulativeAvg);
+    // For time-based events, store the cumulative count at each timestamp
+    const currentCount = regularArray.length;
+    if (currentCount === 0) {
+        cumulativeArray.push(0);
+    } else {
+        cumulativeArray.push(currentCount);
+    }
+}
+
+// For KDA specifically, track running average
+function updateKDACumulative(kdaArray, kdaCumulativeArray, newKDA) {
+    const currentLength = kdaArray.length;
+    if (currentLength === 0) {
+        kdaCumulativeArray.push({
+            timestamp: newKDA.timestamp,
+            kdaValue: newKDA.kdaValue
+        });
+    } else {
+        const previousSum = kdaArray.reduce((sum, entry, idx) => {
+            return sum + entry.kdaValue;
+        }, 0);
+        const newAverage = (previousSum + newKDA.kdaValue) / currentLength;
+        kdaCumulativeArray.push({
+            timestamp: newKDA.timestamp,
+            kdaValue: parseFloat(newAverage.toFixed(2))
+        });
+    }
 }
 
 // Find the team of a player

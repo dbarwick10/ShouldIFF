@@ -16,6 +16,7 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
     let charts = {};
     let currentCategory = 'playerStats';
     let isPolling = false;
+    let isCumulativeMode = false;
 
     const statKeys = ['wins', 'losses', 'surrenderWins', 'surrenderLosses'];
     const chartsToRender = ['kills', 'deaths', 'assists', 'kda', 'turrets', 'dragons', 'barons', 'elders', 'inhibitors', 'deathTimers'];
@@ -41,6 +42,15 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
             Array.isArray(averageEventTimes[category][outcomeType][stat]) && 
             averageEventTimes[category][outcomeType][stat].length > 0
         );
+    }
+
+    function getCumulativeValue(categoryData, stat, index, baseValue) {
+        if (!isCumulativeMode) return baseValue;
+        
+        const cumulativeArray = categoryData[stat + 'Cumulative'];
+        if (!Array.isArray(cumulativeArray)) return baseValue;
+        
+        return cumulativeArray[index] ?? baseValue;
     }
     
     function updateLegendVisibility() {
@@ -289,22 +299,26 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                         data = categoryData.deaths
                             .map((deathTime, index) => ({
                                 x: deathTime / 60,
-                                y: categoryData.timeSpentDead[index]
+                                y: isCumulativeMode ? 
+                                    categoryData.totalTimeSpentDead[index] : 
+                                    categoryData.timeSpentDead[index]
                             }))
                             .filter(point => point.x != null && point.y != null);
                     }
                 } else if (stat === 'kda') {
-                    data = generateKDAData(
-                        categoryData.kills || [],
-                        categoryData.deaths || [],
-                        categoryData.assists || []
-                    );
-                } else if (Array.isArray(categoryData[stat])) {
-                    data = categoryData[stat].map((time, index) => ({
-                        x: time / 60,
-                        y: index + 1
-                    }));
-                }
+                    data = isCumulativeMode ?
+                        categoryData.kdaCumulative || [] :
+                        generateKDAData(
+                            categoryData.kills || [],
+                            categoryData.deaths || [],
+                            categoryData.assists || []
+                        );
+                    } else if (Array.isArray(categoryData[stat])) {
+                        data = categoryData[stat].map((time, index) => ({
+                            x: time / 60,
+                            y: getCumulativeValue(categoryData, stat, index, index + 1)
+                        }));
+                    }
     
                 if (data.length > 0) {
                     datasets.push({
@@ -330,22 +344,26 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                         dataToAdd = previousGameStats[currentCategory].deaths
                             .map((deathTime, index) => ({
                                 x: deathTime / 60,
-                                y: previousGameStats[currentCategory].timeSpentDead[index]
+                                y: isCumulativeMode ? 
+                                    previousGameStats[currentCategory].totalTimeSpentDead[index] : 
+                                    previousGameStats[currentCategory].timeSpentDead[index]
                             }))
                             .filter(point => point.x != null && point.y != null);
                     }
                 } else if (stat === 'kda') {
-                    dataToAdd = generateKDAData(
-                        previousGameStats[currentCategory].kills || [],
-                        previousGameStats[currentCategory].deaths || [],
-                        previousGameStats[currentCategory].assists || []
-                    );
-                } else if (Array.isArray(previousGameStats[currentCategory][stat])) {
-                    dataToAdd = previousGameStats[currentCategory][stat].map((time, index) => ({
-                        x: time / 60,
-                        y: index + 1
-                    }));
-                }
+                    dataToAdd = isCumulativeMode ?
+                        previousGameStats[currentCategory].kdaCumulative || [] :
+                        generateKDAData(
+                            previousGameStats[currentCategory].kills || [],
+                            previousGameStats[currentCategory].deaths || [],
+                            previousGameStats[currentCategory].assists || []
+                        );
+                    } else if (Array.isArray(previousGameStats[currentCategory][stat])) {
+                        dataToAdd = previousGameStats[currentCategory][stat].map((time, index) => ({
+                            x: time / 60,
+                            y: getCumulativeValue(previousGameStats[currentCategory], stat, index, index + 1)
+                        }));
+                    }
     
                 if (dataToAdd.length > 0) {
                     datasets.push({
@@ -371,22 +389,26 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                         dataToAdd = currentLiveStats[currentCategory].deaths
                             .map((deathTime, index) => ({
                                 x: deathTime / 60,
-                                y: currentLiveStats[currentCategory].totalTimeSpentDead[index]
+                                y: isCumulativeMode ? 
+                                    currentLiveStats[currentCategory].totalTimeSpentDead[index] : 
+                                    currentLiveStats[currentCategory].timeSpentDead[index]
                             }))
                             .filter(point => point.x != null && point.y != null);
                     }
                 } else if (stat === 'kda') {
-                    dataToAdd = generateKDAData(
-                        currentLiveStats[currentCategory].kills || [],
-                        currentLiveStats[currentCategory].deaths || [],
-                        currentLiveStats[currentCategory].assists || []
-                    );
-                } else if (Array.isArray(currentLiveStats[currentCategory][stat])) {
-                    dataToAdd = currentLiveStats[currentCategory][stat].map((time, index) => ({
-                        x: time / 60,
-                        y: index + 1
-                    }));
-                }
+                    dataToAdd = isCumulativeMode ?
+                        currentLiveStats[currentCategory].kdaCumulative || [] :
+                        generateKDAData(
+                            currentLiveStats[currentCategory].kills || [],
+                            currentLiveStats[currentCategory].deaths || [],
+                            currentLiveStats[currentCategory].assists || []
+                        );
+                    } else if (Array.isArray(currentLiveStats[currentCategory][stat])) {
+                        dataToAdd = currentLiveStats[currentCategory][stat].map((time, index) => ({
+                            x: time / 60,
+                            y: getCumulativeValue(currentLiveStats[currentCategory], stat, index, index + 1)
+                        }));
+                    }
             
                 if (dataToAdd.length > 0) {
                     datasets.push({
@@ -420,7 +442,7 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                         }
                     },
                     tooltip: {
-                        enabled: true,
+                        enabled: false,
                         mode: 'nearest',
                         intersect: false,
                         callbacks: {
@@ -455,7 +477,7 @@ export async function displayAverageEventTimes(averageEventTimes, calculateStats
                         min: 0,
                         max: maxTimeInMinutes,
                         title: { 
-                            display: true, 
+                            display: false, 
                             text: stat === 'deathTimers' ? 'Time of Death (Minutes)' : 'Time (Minutes)',
                             font: {
                                 weight: 'bold'
@@ -620,18 +642,6 @@ async function startLiveDataRefresh() {
                 restartPolling(FETCH_INTERVAL_MS);
             }
 
-            // Log incoming data state
-            // console.log('Received new game data:', {
-            //     category: currentCategory,
-            //     stats: {
-            //         kills: newLiveStats[currentCategory]?.kills?.length || 0,
-            //         deaths: newLiveStats[currentCategory]?.deaths?.length || 0,
-            //         assists: newLiveStats[currentCategory]?.assists?.length || 0,
-            //         hasDeathTimers: Boolean(newLiveStats[currentCategory]?.deaths?.length && 
-            //                              newLiveStats[currentCategory]?.timeSpentDead?.length)
-            //     }
-            // });
-
             const isEmpty = ['kills', 'deaths', 'assists'].every(stat => 
                 (newLiveStats[currentCategory]?.[stat]?.length || 0) === 0
             );
@@ -710,6 +720,12 @@ try {
     document.getElementById('playerStatsBtn').addEventListener('click', () => toggleStats('playerStats'));
     document.getElementById('teamStatsBtn').addEventListener('click', () => toggleStats('teamStats'));
     document.getElementById('enemyStatsBtn').addEventListener('click', () => toggleStats('enemyStats'));
+    document.getElementById('displayModeBtn').addEventListener('click', () => {
+        isCumulativeMode = !isCumulativeMode;
+        document.getElementById('displayModeBtn').textContent = 
+            isCumulativeMode ? 'Switch to Exact' : 'Switch to Cumulative';
+        charts = renderAllCharts();
+    });
         
     updateChartVisibility();
     charts = renderAllCharts();
@@ -736,6 +752,12 @@ try {
             document.getElementById('playerStatsBtn').removeEventListener('click', () => toggleStats('playerStats'));
             document.getElementById('teamStatsBtn').removeEventListener('click', () => toggleStats('teamStats'));
             document.getElementById('enemyStatsBtn').removeEventListener('click', () => toggleStats('enemyStats'));
+            document.getElementById('displayModeBtn').addEventListener('click', () => {
+                isCumulativeMode = !isCumulativeMode;
+                document.getElementById('displayModeBtn').textContent = 
+                    isCumulativeMode ? 'Switch to Exact' : 'Switch to Cumulative';
+                charts = renderAllCharts();
+            });
         }
     };
 } catch (error) {
