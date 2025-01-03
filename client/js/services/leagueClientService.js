@@ -3,36 +3,6 @@
 import { calculateLiveStats } from './liveMatchStats.js';  // Your existing processing logic
 let leagueApi = null;
 
-function loadAxiosScript() {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/axios@1.6.2/dist/axios.min.js';
-        script.onload = () => resolve(window.axios);
-        script.onerror = () => reject(new Error('Failed to load axios'));
-        document.head.appendChild(script);
-    });
-}
-
-async function setupAxios() {
-    try {
-        const axios = await loadAxiosScript();
-        
-        // Now we can safely create the API instance
-        leagueApi = axios.create({
-            baseURL: 'https://127.0.0.1:2999',
-            timeout: 5000,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-    } catch (error) {
-        console.error('Failed to initialize axios:', error);
-    }
-}
-
-// Initialize axios when the module loads
-await setupAxios();
-
 // Game state management
 const gameState = {
     currentLiveStats: null,
@@ -44,19 +14,22 @@ const gameState = {
 };
 
 export async function fetchGameData(retries = 3) {
-    if (!leagueApi) {
-        await setupAxios();
-    }
-
     try {
-        const response = await leagueApi.get('/liveclientdata/allgamedata');
+        const response = await fetch('https://127.0.0.1:2999/liveclientdata/allgamedata', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        const data = await response.json();
         
-        if (!isValidGameData(response.data)) {
+        if (!isValidGameData(data)) {
             console.log('Invalid live game data - using historical data');
             return handleNoLiveGame();
         }
         
-        const processedStats = await calculateLiveStats(response.data);
+        const processedStats = await calculateLiveStats(data);
         updateGameState(processedStats);
         
         return {
@@ -65,7 +38,6 @@ export async function fetchGameData(retries = 3) {
             gameActive: gameState.gameActive,
             historicalData: gameState.historicalData
         };
-
     } catch (error) {
         if (retries > 0) {
             console.log(`Retrying... ${retries} attempts remaining`);
