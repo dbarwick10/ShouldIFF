@@ -1,7 +1,11 @@
+// Log when module starts loading to help with debugging
+console.log('Module loading');
+
+// Import required functionality
 import { displayAverageEventTimes } from './components/displayAverageEventTimes.js';
 import { LOCAL_TESTING } from "./components/config/constraints.js"; 
 
-// URL Parameter handling functions
+// Helper function to parse URL parameters for bookmarking and sharing
 function getUrlParams() {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -12,21 +16,19 @@ function getUrlParams() {
     };
 }
 
+// Helper function to clean taglines of special characters
 function cleanTagline(tagline) {
     return tagline.replace(/^[#%23]/, '');
 }
 
+// Updates the URL when form values change for sharing/bookmarking
 function updateUrl(params) {
-    // Create a new URL object
     const url = new URL(window.location.href);
-    
-    // Clear existing parameters
     url.search = '';
     
-    // Define the desired parameter order
+    // Maintain consistent parameter order
     const paramOrder = ['summoner', 'tag', 'region', 'mode'];
     
-    // Add parameters in the specified order
     paramOrder.forEach(param => {
         switch(param) {
             case 'summoner':
@@ -44,10 +46,10 @@ function updateUrl(params) {
         }
     });
     
-    // Update the URL
     window.history.pushState({}, '', url);
 }
 
+// Updates form input values based on URL parameters
 function updateFormInputs(params) {
     document.getElementById('summonerName').value = params.summonerName;
     document.getElementById('tagLine').value = cleanTagline(params.tagLine);
@@ -55,7 +57,18 @@ function updateFormInputs(params) {
     document.getElementById('gameMode').value = params.gameMode;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+// Main application initialization function
+async function initializeApplication() {
+    console.log('Initializing application');
+    
+    // Wait for DOM to be fully loaded before proceeding
+    if (document.readyState === 'loading') {
+        await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve));
+    }
+    
+    console.log('DOM is ready');
+    
+    // Get all required DOM elements
     const analyzeButton = document.getElementById('fetchStatsButton');
     const loading = document.getElementById('loading');
     const inputSection = document.querySelector('.input-section');
@@ -63,7 +76,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const chartLegend = document.querySelector('.chart-legend');
     const howToUseThis = document.querySelector('.how-to-use-this');
     
-    // Loading state messages
+    // Verify critical elements exist
+    if (!analyzeButton || !loading || !inputSection) {
+        console.error('Critical elements not found. Check HTML structure.');
+        return;
+    }
+    
+    console.log('Button element:', analyzeButton);
+    
+    // Loading state configuration
     const loadingStates = [
         'Fetching player information...',
         'Gathering match event data...',
@@ -76,13 +97,13 @@ document.addEventListener('DOMContentLoaded', function() {
         `Well, if you're still here, might as well stay a bit longer...`
     ];
     
-    // State variables
+    // State management variables
     let currentLoadingState = 0;
     let loadingInterval;
     let currentCleanup = null;
     let lastSuccessfulSearch = null;
     
-    // Helper function to display error messages
+    // Error display helper
     function displayError(message, details = '') {
         clearInterval(loadingInterval);
         loading.innerHTML = `
@@ -93,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // Helper function to update loading state
+    // Loading state update helper
     function updateLoadingState() {
         loading.innerHTML = `
             <strong>${loadingStates[currentLoadingState]}</strong>
@@ -101,10 +122,10 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
+    // Main stats handling function
     async function handleStats(formData) {
         try {
-            // Check for duplicate search
-            
+            // Prevent duplicate searches
             if (lastSuccessfulSearch && 
                 formData.summonerName.toLowerCase() === lastSuccessfulSearch.summonerName.toLowerCase() &&
                 formData.tagLine.toLowerCase() === lastSuccessfulSearch.tagLine.toLowerCase() &&
@@ -114,13 +135,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Clean up existing charts
+            // Cleanup and UI preparation
             if (currentCleanup) {
                 currentCleanup();
                 currentCleanup = null;
             }
 
-            // Hide existing content
             if (chartContainer) chartContainer.style.display = 'none';
             if (chartLegend) chartLegend.style.display = 'none';
 
@@ -132,30 +152,21 @@ document.addEventListener('DOMContentLoaded', function() {
             currentLoadingState = 0;
             updateLoadingState();
 
-            // Start loading state cycle
+            // Start loading message cycle
             loadingInterval = setInterval(() => {
                 currentLoadingState = (currentLoadingState + 1) % loadingStates.length;
                 updateLoadingState();
             }, 23000);
 
-            // Update URL with current form data
             updateUrl(formData);
 
-            // Make API request
+            // API request
             const prodURL = 'http://shouldiff.ddns.net:3000/api/stats';
             const localURL = 'http://127.0.0.1:3000/api/stats';
             
-            const response = LOCAL_TESTING ? await fetch(localURL, {
+            const response = await fetch(LOCAL_TESTING ? localURL : prodURL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            }) : await fetch(prodURL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
 
@@ -167,26 +178,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (!response.ok) {
-                const errorMessage = data.error || 'An unexpected error occurred';
-                const errorDetails = data.details || '';
-                displayError(errorMessage, errorDetails);
+                displayError(data.error || 'An unexpected error occurred', data.details || '');
                 inputSection.style.display = 'block';
                 analyzeButton.disabled = false;
                 return;
             }
 
-            // Validate response data
             if (!data.playerStats || !data.teamStats || !data.enemyTeamStats) {
                 throw new Error('Invalid data received from server');
             }
 
-            // Display event times if available
             if (data.averageEventTimes) {
                 const result = await displayAverageEventTimes(data.averageEventTimes, data.liveStats);
                 currentCleanup = result.cleanup;
             }
 
-            // Clean up and update UI
+            // Cleanup and UI updates
             clearInterval(loadingInterval);
             lastSuccessfulSearch = { ...formData };
             loading.style.display = 'none';
@@ -218,28 +225,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (analyzeButton) {
-        analyzeButton.addEventListener('click', async function() {
-            const formData = {
-                summonerName: document.getElementById('summonerName').value.trim(),
-                tagLine: document.getElementById('tagLine').value.trim(),
-                region: document.getElementById('region').value,
-                gameMode: document.getElementById('gameMode').value
-            };
+    // Set up event listeners
+    analyzeButton.addEventListener('click', async function() {
+        console.log('Button clicked');
 
-            // Validate input
-            if (!formData.summonerName || !formData.tagLine) {
-                alert('Please enter both summoner name and tagline');
-                return;
-            }
+        const formData = {
+            summonerName: document.getElementById('summonerName').value.trim(),
+            tagLine: document.getElementById('tagLine').value.trim(),
+            region: document.getElementById('region').value,
+            gameMode: document.getElementById('gameMode').value
+        };
 
-            await handleStats(formData);
-        });
-    }
+        if (!formData.summonerName || !formData.tagLine) {
+            alert('Please enter both summoner name and tagline');
+            return;
+        }
+
+        await handleStats(formData);
+    });
 
     // Set up form change listeners for URL updates
-    const inputs = ['summonerName', 'tagLine', 'region', 'gameMode'];
-    inputs.forEach(inputId => {
+    ['summonerName', 'tagLine', 'region', 'gameMode'].forEach(inputId => {
         document.getElementById(inputId).addEventListener('change', () => {
             const currentParams = {
                 summonerName: document.getElementById('summonerName').value,
@@ -251,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle browser back/forward buttons
+    // Handle browser navigation
     window.addEventListener('popstate', () => {
         const params = getUrlParams();
         updateFormInputs(params);
@@ -260,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize form with URL parameters
+    // Initialize with URL parameters if present
     const initialParams = getUrlParams();
     updateFormInputs(initialParams);
     if (initialParams.summonerName && initialParams.tagLine) {
@@ -273,4 +279,11 @@ document.addEventListener('DOMContentLoaded', function() {
             currentCleanup();
         }
     });
+
+    console.log('Application initialized');
+}
+
+// Start the application
+initializeApplication().catch(error => {
+    console.error('Failed to initialize application:', error);
 });
