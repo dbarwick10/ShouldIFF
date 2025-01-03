@@ -161,7 +161,7 @@ async function initializeApplication() {
             updateUrl(formData);
 
             // API request
-            const prodURL = 'https://shouldiffserver-test.onrender.com';
+            const prodURL = 'https://shouldiffserver-test.onrender.com/api/stats';
             const localURL = 'http://shouldiff.ddns.net:3000/api/stats';
             
             const response = await fetch(LOCAL_TESTING ? localURL : prodURL, {
