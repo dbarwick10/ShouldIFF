@@ -1,18 +1,10 @@
 //displayAverageEventTimes.js shouldiff
-
-import { 
-    fetchGameData, 
-    clearGameState, 
-    getCurrentGameState,
-    initializeWithHistoricalData 
-} from '../services/leagueClientService.js';
-
 import { FETCH_INTERVAL_MS, RETRY_INTERVAL_MS } from "./config/constraints.js"; 
 
 export async function displayAverageEventTimes(averageEventTimes, calculateStats) {
     console.log('Initializing displayAverageEventTimes');
     
-    initializeWithHistoricalData(averageEventTimes);
+    // initializeWithHistoricalData(averageEventTimes);
 
     let currentLiveStats = null;
     let previousGameStats = null;
@@ -635,42 +627,101 @@ async function startLiveDataRefresh() {
 
     async function updateLiveData() {
         try {
-            const gameData = await fetchGameData();
+            const response = await fetch('http://127.0.0.1:3000/api/live-stats')
+                        
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('No active game found - preserving last game data');
+                    if (gameActive) {
+                        gameActive = false;
+                        if (currentLiveStats) {
+                            console.log('Game ended - saving current game data');
+                            lastValidGameData = JSON.parse(JSON.stringify(currentLiveStats));
+                        }
+                    }
+                    // Keep showing the last known state
+                    if (lastValidGameData) {
+                        currentLiveStats = JSON.parse(JSON.stringify(lastValidGameData));
+                    }
+                    updateChartVisibility();
+                    charts = renderAllCharts();
+                    return;
+                }
+                
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             
-            // Even if we don't have live data, we'll still have historical data to display
-            currentLiveStats = gameData.currentLiveStats;
-            previousGameStats = gameData.previousGameStats;
-            gameActive = gameData.gameActive;
-    
-            // Manage polling state based on whether we have an active game
-            if (gameActive && !isPolling) {
+            const newLiveStats = await response.json();
+            
+            if (!newLiveStats || newLiveStats === null) {
+                if (gameActive && currentLiveStats) {
+                    console.log('Game ended (null data) - saving game data');
+                    lastValidGameData = JSON.parse(JSON.stringify(currentLiveStats));
+                    gameActive = false;
+                }
+                if (lastValidGameData) {
+                    currentLiveStats = JSON.parse(JSON.stringify(lastValidGameData));
+                }
+                updateChartVisibility();
+                charts = renderAllCharts();
+                return;
+            }
+
+            if (!isPolling) {
                 isPolling = true;
                 restartPolling(FETCH_INTERVAL_MS);
-            } else if (!gameActive && isPolling) {
-                isPolling = false;
-                restartPolling(RETRY_INTERVAL_MS);
             }
-    
-            // Always update the visualization, whether we're showing live or historical data
+
+            const isEmpty = ['kills', 'deaths', 'assists'].every(stat => 
+                (newLiveStats[currentCategory]?.[stat]?.length || 0) === 0
+            );
+
+            if (isEmpty && lastValidGameData) {
+                console.log('Received empty data - maintaining last valid state');
+                currentLiveStats = JSON.parse(JSON.stringify(lastValidGameData));
+                updateChartVisibility();
+                charts = renderAllCharts();
+                return;
+            }
+
+            // New game detection
+            if (!gameActive && hasValidStats(newLiveStats)) {
+                console.log('New game starting - moving previous game data');
+                if (lastValidGameData) {
+                    console.log('Moving last game to previousGameStats');
+                    previousGameStats = JSON.parse(JSON.stringify(lastValidGameData));
+                    lastValidGameData = null;
+                }
+                gameActive = true;
+                currentLiveStats = JSON.parse(JSON.stringify(newLiveStats));
+            } else if (gameActive && hasValidStats(newLiveStats)) {
+                // Update current game
+                currentLiveStats = JSON.parse(JSON.stringify(newLiveStats));
+                lastValidGameData = JSON.parse(JSON.stringify(newLiveStats));
+            }
+
+            updateChartVisibility();
+            charts = renderAllCharts();
+        } catch (error) {
+            console.log('Error type:', error.message);
+            if (error.message.includes('ECONNREFUSED')) {
+                console.log('Game ended (ECONNREFUSED)');
+                if (gameActive && currentLiveStats) {
+                    gameActive = false;
+                    lastValidGameData = JSON.parse(JSON.stringify(currentLiveStats));
+                }
+                if (lastValidGameData) {
+                    currentLiveStats = JSON.parse(JSON.stringify(lastValidGameData));
+                }
+            }
+
             updateChartVisibility();
             charts = renderAllCharts();
             
-        } catch (error) {
-            console.log('Error updating data:', error);
-            
-            // On error, get the current state which will include historical data if no live data
-            const currentState = getCurrentGameState();
-            currentLiveStats = currentState.currentLiveStats;
-            previousGameStats = currentState.previousGameStats;
-            gameActive = currentState.gameActive;
-    
             if (isPolling) {
                 isPolling = false;
                 restartPolling(RETRY_INTERVAL_MS);
             }
-            
-            updateChartVisibility();
-            charts = renderAllCharts();
         }
     }
 
