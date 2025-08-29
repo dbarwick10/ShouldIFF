@@ -56,7 +56,7 @@ export const getChartOptions = (stat, maxTimeInMinutes) => ({
             // max: Math.max(2, data.length),
             min: 0,
             suggestedMin: 0,
-            ...(stat === 'riftHeralds' ? {
+            ...(stat === 'riftHeralds' || stat === 'atakhans' ? {
                 max: 2,
                 ticks: { display: false, stepSize: 1 }
             } : stat !== 'deathTimers' && stat !== 'kda' && stat !== 'itemPurchases' ? {
